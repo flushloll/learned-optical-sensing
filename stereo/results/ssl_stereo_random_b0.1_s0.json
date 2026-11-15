@@ -1,0 +1,56 @@
+{
+  "name": "ssl_stereo_random_b0.1_s0",
+  "setup": "ssl_stereo",
+  "readings": null,
+  "size": "random",
+  "baseline": 0.1,
+  "seed": 0,
+  "steps": 4000,
+  "eyes": 2,
+  "readings_per_frame": 8192,
+  "train_seconds": 1711.107090473175,
+  "probe": {
+    "depth_now": {
+      "rmse_cm": 26.943176673211656,
+      "chance_rmse_cm": 51.31617838580242,
+      "r2": 0.7243303305675177
+    },
+    "depth_+100ms": {
+      "rmse_cm": 27.835495037696223,
+      "chance_rmse_cm": 51.62475773700543,
+      "r2": 0.7092753572572832
+    },
+    "x_now": {
+      "rmse_cm": 3.3840662588293537,
+      "chance_rmse_cm": 23.361005918228983,
+      "r2": 0.9790156927419452
+    },
+    "ball_radius": {
+      "rmse_cm": 1.5507823616945222,
+      "chance_rmse_cm": 3.4503421685553355,
+      "r2": 0.7979879045072915
+    }
+  },
+  "probe_untrained": {
+    "depth_now": {
+      "rmse_cm": 42.05618028948484,
+      "chance_rmse_cm": 51.31617838580242,
+      "r2": 0.3283375964812606
+    },
+    "depth_+100ms": {
+      "rmse_cm": 42.789677016552666,
+      "chance_rmse_cm": 51.62475773700543,
+      "r2": 0.3129917323864271
+    },
+    "x_now": {
+      "rmse_cm": 17.76198425371715,
+      "chance_rmse_cm": 23.361005918228983,
+      "r2": 0.42190410892751107
+    },
+    "ball_radius": {
+      "rmse_cm": 2.5152423111913147,
+      "chance_rmse_cm": 3.4503421685553355,
+      "r2": 0.4685831408334278
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "classical_mono_random_b0.1",
+  "setup": "classical_mono",
+  "size": "random",
+  "baseline": 0.1,
+  "eyes": 1,
+  "readings_per_frame": 4096,
+  "kalman": {
+    "q": 100000.0,
+    "r_xy": 0.0001,
+    "r_z": 0.1
+  },
+  "test": {
+    "random": {
+      "lateral_10ms": 9.415968894958496,
+      "depth_10ms": 53.392311096191406,
+      "lateral_50ms": 9.738091468811035,
+      "depth_50ms": 53.41468811035156,
+      "lateral_100ms": 11.902166366577148,
+      "depth_100ms": 53.46209716796875,
+      "depth_100ms_z1.0-1.7": 40.00230407714844,
+      "depth_100ms_z1.7-2.3": 60.433563232421875,
+      "depth_100ms_z2.3-3.0": 59.16084671020508
+    }
+  }
+}

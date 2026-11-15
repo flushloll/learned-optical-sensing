@@ -1,0 +1,8 @@
+# regenerable outputs (masks are re-created by training; plots of them are committed)
+*.pt
+*.log
+__pycache__/
+.DS_Store
+
+# demo checkpoints (re-created by demo.py)
+demo/*.pt

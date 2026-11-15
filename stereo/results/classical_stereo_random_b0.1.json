@@ -1,0 +1,26 @@
+{
+  "name": "classical_stereo_random_b0.1",
+  "setup": "classical_stereo",
+  "size": "random",
+  "baseline": 0.1,
+  "eyes": 2,
+  "readings_per_frame": 8192,
+  "kalman": {
+    "q": 10000.0,
+    "r_xy": 1e-06,
+    "r_z": 0.1
+  },
+  "test": {
+    "random": {
+      "lateral_10ms": 1.4870673418045044,
+      "depth_10ms": 5.104956150054932,
+      "lateral_50ms": 4.956334114074707,
+      "depth_50ms": 8.510117530822754,
+      "lateral_100ms": 11.6954927444458,
+      "depth_100ms": 13.775602340698242,
+      "depth_100ms_z1.0-1.7": 5.727527141571045,
+      "depth_100ms_z1.7-2.3": 14.9982328414917,
+      "depth_100ms_z2.3-3.0": 20.55242156982422
+    }
+  }
+}

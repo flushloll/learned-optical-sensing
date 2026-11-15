@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seeing less, predicting motion: findings</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="tip"></div>
+<main>
+
+<header>
+  <h1>Can a robot see <em>less</em> and still predict motion?</h1>
+  <p class="lede">Two small simulated experiments testing an idea from a conversation: instead of capturing a full
+    image and processing it, let the optics pick a few measurements that matter for predicting where things
+    will move. Then: does a second "eye" help in 3D?</p>
+  <p class="updated">Last updated <span data-v="updated"></span> · all results are from simulation</p>
+  <nav>
+    <a href="#tldr">Summary</a><a href="#idea">The idea</a><a href="#exp1">Experiment 1: few measurements</a>
+    <a href="#exp2">Experiment 2: two eyes</a><a href="#meaning">What it means</a>
+    <a href="#caveats">Caveats</a><a href="#next">Next steps</a>
+  </nav>
+</header>
+
+<section id="tldr">
+  <h2>The short version</h2>
+  <div class="tiles">
+    <div class="tile"><div class="num">256× less data</div>
+      <div class="cap">16 learned measurements predicted a ball's position 100 ms ahead within
+        <span data-v="2d.mask16.clean"></span> px, against <span data-v="2d.frames.clean"></span> px from the full 4096-pixel image.</div></div>
+    <div class="tile"><div class="num"><span data-v="2d.mask16.flicker"></span> → <span data-v="2d.norm16.flicker"></span> px</div>
+      <div class="cap">Flickering light broke the few-measurement sensor. One extra light sensor that
+        measures total brightness fixed it.</div></div>
+    <div class="tile"><div class="num"><span data-v="3d.mono.random"></span> → <span data-v="3d.stereo.random"></span> cm</div>
+      <div class="cap">Depth error with one eye vs. two, when ball sizes vary. With a known ball size, the second eye barely helped
+        (<span data-v="3d.mono.fixed"></span> vs <span data-v="3d.stereo.fixed"></span> cm).</div></div>
+    <div class="tile"><div class="num"><span data-v="2d.kalman.min"></span>–<span data-v="2d.kalman.max"></span> px</div>
+      <div class="cap">A classical tracker with no learning stayed in this range in every condition except a faster ball:
+        a strong reminder that simple physics doesn't need AI.</div></div>
+  </div>
+  <div class="callout"><p><strong>Bottom line:</strong> the intuition holds up. Measuring with the task in mind
+    lets a sensor get away with far less data. But it trades accuracy and robustness for efficiency, some
+    of that fragility can be fixed in the optics themselves, and for depth, a second viewpoint matters exactly
+    when the world is ambiguous.</p></div>
+</section>
+
+<section id="idea">
+  <h2>The idea</h2>
+  <p>A normal vision system captures every pixel, then a neural network works out what matters.
+    The idea tested here moves part of that work into the optics, before anything is digitized:</p>
+  <div class="pipeline">
+    <span class="lab">Conventional</span>
+    <span class="step">Light</span><span class="arrow">→</span><span class="step">Camera: 4096 pixels</span>
+    <span class="arrow">→</span><span class="step">Neural network picks what matters</span><span class="arrow">→</span><span class="step">Prediction</span>
+  </div>
+  <div class="pipeline">
+    <span class="lab">Tested here</span>
+    <span class="step">Light</span><span class="arrow">→</span><span class="step hi">Learned optical masks pick what matters</span>
+    <span class="arrow">→</span><span class="step">A few numbers</span><span class="arrow">→</span><span class="step">Small network</span><span class="arrow">→</span><span class="step">Prediction</span>
+  </div>
+  <p>Each "mask" is a pattern that lets some light through and blocks the rest; a single light sensor behind
+    it reports one number, the total light that got through. This exists in real hardware (a micromirror
+    array plus a single-pixel detector). The patterns are <strong>learned</strong> together with the predictor, so
+    the optics end up measuring what's useful for predicting motion.</p>
+</section>
+
+<section id="exp1">
+  <h2>Experiment 1: how few measurements are enough?</h2>
+  <p>A simulated ball bounces under gravity, seen by a 64×64 sensor. Each model sees 100 ms of
+    history and predicts where the ball will be 10, 50 and 100 ms later.</p>
+
+  <div class="chart" id="c2d-clean"></div>
+  <p>With 16 readings instead of 4096, the error goes from <span data-v="2d.frames.clean"></span> to
+    <span data-v="2d.mask16.clean"></span> px: about 3% of the image width. Random masks with the same number of readings
+    get <span data-v="2d.random16.clean"></span> px, so <strong>learning what to measure is what makes it work</strong>.</p>
+
+  <div class="chart" id="c2d-curve"></div>
+
+  <figure><a href="img/learned_masks.png" target="_blank"><img src="img/learned_masks.png" alt="The 16 learned mask patterns"></a>
+    <figcaption>The 16 learned masks are smooth light/dark gradients that encode <em>where</em> the light is. That's
+      roughly what an existing cheap sensor, the position-sensitive detector, does: the training rediscovered it.</figcaption></figure>
+
+  <h3>The catch: fragility</h3>
+  <div class="chart" id="c2d-heat"></div>
+  <div class="grid2">
+    <div class="card"><h3>It breaks when the lights flicker</h3>
+      <p>Trained on steady lighting, the mask sensor's error jumps to <span data-v="2d.mask16.flicker"></span> px under flicker and
+        <span data-v="2d.mask16.texture"></span> px on a busy background. A sum of light can't tell "the ball moved" from "the lights dimmed".</p></div>
+    <div class="card"><h3>The fix can be in the optics</h3>
+      <p>One extra sensor that measures total light, used to divide the others, cancels flicker:
+        <span data-v="2d.mask16.flicker"></span> → <span data-v="2d.norm16.flicker"></span> px, with no cost on clean scenes. Adding varied training then also
+        handles the busy background (<span data-v="2d.norm64m.texture"></span> px with 64 masks).</p></div>
+  </div>
+  <p>That fix is similar to how your eyes handle a dark-to-bright room: the retina responds to <em>relative</em>
+    brightness (contrast), not absolute brightness. It's a better analogy than two eyes.</p>
+  <p><strong>The fair comparison is still a trade-off.</strong> Given the same varied training, the full image reaches
+    <span data-v="2d.framesm.clean"></span>–<span data-v="2d.framesm.flicker"></span> px on clean, flicker and busy scenes, the best mask sensor
+    <span data-v="2d.norm64m.flicker"></span>–<span data-v="2d.norm64m.texture"></span> px: roughly 3× the error with 63× fewer readings.</p>
+</section>
+
+<section id="exp2">
+  <h2>Experiment 2: does a second eye help in 3D?</h2>
+  <p>The ball now bounces in a 3D box 1–3 m away, seen by one or two simulated cameras. The key twist:
+    <strong>ball size</strong>. If you know how big the ball is, one eye can judge distance from how big it looks. If
+    sizes vary, a big far ball and a small near ball look identical, and only a second viewpoint can tell them apart.</p>
+
+  <div class="chart" id="c3d-main"></div>
+  <p>Exactly as predicted: with a known size, one eye is nearly as good as two
+    (<span data-v="3d.mono.fixed"></span> vs <span data-v="3d.stereo.fixed"></span> cm). With random sizes, one eye's error jumps to
+    <span data-v="3d.mono.random"></span> cm and two eyes bring it back to <span data-v="3d.stereo.random"></span> cm. The classical size-based
+    method collapses completely (<span data-v="3d.cmono.random"></span> cm).</p>
+
+  <div class="chart" id="c3d-sep"></div>
+  <p>Even eyes 3 cm apart more than halve the error (<span data-v="3d.sep3"></span> cm). Classical triangulation gets worse with distance
+    (<span data-v="3d.cstereo.near"></span> cm near → <span data-v="3d.cstereo.far"></span> cm far), because far-away objects shift less between the eyes;
+    the learned two-eye model stays much flatter (<span data-v="3d.stereo.near"></span> → <span data-v="3d.stereo.far"></span> cm).</p>
+
+  <h3>Few-measurement sensing with two eyes</h3>
+  <p>Splitting 32 readings across two eyes cuts depth error from <span data-v="3d.mmono.random"></span> to
+    <span data-v="3d.msep.random"></span> cm (<span data-v="3d.long.sep32"></span> cm with 4× longer training). Masks that
+    combine <em>both</em> eyes' light on one detector at first learned nothing from the second eye
+    (<span data-v="3d.mbino.random"></span> cm): they learned the same pattern for both eyes, which cancels the depth signal.</p>
+  <div class="grid2">
+    <figure><a href="img/binocular_masks_4k.png" target="_blank"><img src="img/binocular_masks_4k.png" alt="Binocular masks after normal training"></a>
+      <figcaption>Normal training: left and right halves identical; "left minus right" (bottom row) is noise.</figcaption></figure>
+    <figure><a href="img/binocular_masks_16k.png" target="_blank"><img src="img/binocular_masks_16k.png" alt="Binocular masks after 4x longer training"></a>
+      <figcaption>4× longer training (<span data-v="3d.long.bino32"></span> cm): several masks become horizontally <em>shifted</em> copies
+        between the eyes (vertical red/blue stripes), so they respond to a particular disparity, like disparity-tuned neurons in the visual cortex.</figcaption></figure>
+  </div>
+
+  <h3>Does a model learn 3D on its own?</h3>
+  <div class="chart" id="c3d-probe"></div>
+  <p>Partly. Models trained only to predict their own future images, never told about depth, still encode it
+    (<span data-v="3d.probe.mono" data-d="2"></span> with one eye, <span data-v="3d.probe.stereo" data-d="2"></span> with two, vs
+    <span data-v="3d.probe.untr.mono" data-d="2"></span>–<span data-v="3d.probe.untr.stereo" data-d="2"></span> for an untrained network).
+    But the second eye barely helped here; predicting blurry low-resolution images didn't push the model to use it.</p>
+</section>
+
+<section id="meaning">
+  <h2>What it means</h2>
+  <div class="grid2">
+    <div class="card"><h3>Where few-measurement sensing could matter</h3>
+      <p>When data, power or cost is the bottleneck, not accuracy: tiny drones and battery-powered sensors,
+        infrared or other wavelengths where pixel arrays are expensive, and very fast events, since single
+        light sensors respond far faster than cameras read out frames.</p></div>
+    <div class="card"><h3>Moving computation into optics moves fragility there too</h3>
+      <p>Software can be retrained; fixed optics can't. Robustness has to be designed in, and the experiments
+        show it can be partly done physically (the total-light sensor), not only by more training.</p></div>
+    <div class="card"><h3>Use AI where physics is hard to write down</h3>
+      <p>For a ball under gravity, a classical tracker is cheap, robust and hard to beat. Learned sensing earns
+        its place with messy dynamics (cloth, fluids, crowds, contact), which is also where a few numbers are
+        least likely to be enough. That tension is the real research question.</p></div>
+    <div class="card"><h3>Two eyes: when the world is ambiguous</h3>
+      <p>A second viewpoint matters most when single-view cues (like known size) fail, and it helps more with
+        wider separation. Optically combining eyes is possible but harder to learn than keeping them separate.</p></div>
+  </div>
+  <p>Related real-world work: event cameras ("silicon retinas"), single-pixel imaging, learned and diffractive
+    optics, and neuromorphic sensors. These results reproduce the trade-offs those fields deal with; they aren't
+    a new result, but they make the trade-offs concrete.</p>
+</section>
+
+<section id="caveats">
+  <h2>Caveats</h2>
+  <ul>
+    <li>Everything is simulated: one simple object, tiny 64×64 sensors, idealised optics.</li>
+    <li>Speed is estimated from computing operations, not timed on hardware. A real micromirror array shows masks one
+      after another, which limits how fast it can take many readings.</li>
+    <li>The event-camera model groups events per frame, which hides its main advantage (microsecond timing).</li>
+    <li>Most rows come from one or two training runs; the few-measurement models were still improving when
+      training stopped, so their gaps to the full-image models are probably overstated.</li>
+    <li>The "does depth emerge" test is one training objective and one run: a first look, not a conclusion.</li>
+  </ul>
+</section>
+
+<section id="next">
+  <h2>Possible next steps</h2>
+  <ul>
+    <li>Train the mask sensors longer and with more runs, to see how close they can really get.</li>
+    <li>A messier world: several objects, deformable shapes, collisions between objects.</li>
+    <li>A stronger "learn on your own" objective, to test whether two eyes lead to 3D understanding without labels.</li>
+    <li>A cheap real-hardware test: learned masks printed on transparency film in front of a few photodiodes, read by an Arduino.</li>
+  </ul>
+</section>
+
+<footer>
+  Built from the result files in <code>optical-mask-experiment/</code>. After new results, run
+  <code>python3 build.py</code> in the <code>site</code> folder and refresh.
+</footer>
+</main>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

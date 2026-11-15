@@ -1,0 +1,26 @@
+{
+  "name": "classical_stereo_fixed_b0.1",
+  "setup": "classical_stereo",
+  "size": "fixed",
+  "baseline": 0.1,
+  "eyes": 2,
+  "readings_per_frame": 8192,
+  "kalman": {
+    "q": 100000.0,
+    "r_xy": 0.0001,
+    "r_z": 0.1
+  },
+  "test": {
+    "fixed": {
+      "lateral_10ms": 1.7830462455749512,
+      "depth_10ms": 5.680114269256592,
+      "lateral_50ms": 5.695239543914795,
+      "depth_50ms": 9.376461029052734,
+      "lateral_100ms": 12.765257835388184,
+      "depth_100ms": 15.057928085327148,
+      "depth_100ms_z1.0-1.7": 5.5591535568237305,
+      "depth_100ms_z1.7-2.3": 16.209516525268555,
+      "depth_100ms_z2.3-3.0": 23.452898025512695
+    }
+  }
+}
